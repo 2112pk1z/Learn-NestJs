@@ -1,4 +1,5 @@
 import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { CreateUserDto } from '../user/dto/createUserRequest.dto';
@@ -7,6 +8,7 @@ import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dto/loginRequest.dto';
 
+@ApiTags('Xác thực (Auth)')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -15,6 +17,18 @@ export class AuthController {
   ) {}
 
   @Post('/register')
+  @ApiOperation({
+    summary: 'Đăng ký tài khoản mới',
+    description: 'Tạo một tài khoản người dùng mới. Mật khẩu sẽ được tự động băm (hash) trước khi lưu.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Đăng ký thành công.',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Lỗi hệ thống khi tạo tài khoản.',
+  })
   async create(
     @Body() createUserDto: CreateUserDto,
   ): Promise<ResponseData<User>> {
@@ -36,11 +50,25 @@ export class AuthController {
   }
 
   @Post('/login')
+  @ApiOperation({
+    summary: 'Đăng nhập hệ thống',
+    description: 'Kiểm tra thông tin đăng nhập. Hiện tại đang trả về object User, sẽ nâng cấp trả về JWT Token trong Tuần 2.',
+  })
+  @ApiBody({ type: LoginRequestDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Đăng nhập thành công.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Sai email hoặc mật khẩu.',
+  })
   async login(@Body() loginDTO: LoginRequestDto): Promise<ResponseData<User>> {
     const user = await this.userService.validateUser(
       loginDTO.email,
       loginDTO.password,
     );
+    
     if (!user) {
       return new ResponseData<User>(
         null,
@@ -48,6 +76,7 @@ export class AuthController {
         HttpMessage.UNAUTHORIZED,
       );
     }
+    
     return new ResponseData<User>(user, HttpStatus.OK, HttpMessage.OK);
   }
 }
