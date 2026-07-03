@@ -1,5 +1,10 @@
-import { Exclude } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('Users')
 export class User {
@@ -9,14 +14,13 @@ export class User {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
 
   @Column()
   phone: string;
 
-  @Exclude()
-  @Column({ select: false })
+  @Column()
   password: string;
 
   @Column({ type: 'date' })
@@ -25,9 +29,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  // @Column()
-  // created_At: Date;
+  @CreateDateColumn()
+  created_At: Date;
 
-  // @Column()
-  // updated_At: Date;
+  @UpdateDateColumn()
+  updated_At: Date;
 }

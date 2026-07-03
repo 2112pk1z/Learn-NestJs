@@ -6,12 +6,10 @@ import {
   HttpStatus,
   Param,
   Patch,
-  Post,
 } from '@nestjs/common';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './user.service';
 
@@ -19,26 +17,26 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  async create(
-    @Body() createUserDto: CreateUserDto,
-  ): Promise<ResponseData<User>> {
-    try {
-      const newUser = await this.userService.create(createUserDto);
-      return new ResponseData<User>(
-        newUser,
-        HttpStatus.CREATED,
-        HttpMessage.CREATED,
-      );
-    } catch (error) {
-      console.error('Lỗi khi tạo user:', error);
-      return new ResponseData<User>(
-        null,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        HttpMessage.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+  // @Post()
+  // async create(
+  //   @Body() createUserDto: CreateUserDto,
+  // ): Promise<ResponseData<User>> {
+  //   try {
+  //     const newUser = await this.userService.create(createUserDto);
+  //     return new ResponseData<User>(
+  //       newUser,
+  //       HttpStatus.CREATED,
+  //       HttpMessage.CREATED,
+  //     );
+  //   } catch (error) {
+  //     console.error('Lỗi khi tạo user:', error);
+  //     return new ResponseData<User>(
+  //       null,
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //       HttpMessage.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
 
   @Get()
   async findAll(): Promise<ResponseData<User>> {
