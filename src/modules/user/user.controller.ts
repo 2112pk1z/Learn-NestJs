@@ -11,6 +11,12 @@ import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
 import { User } from './entities/user.entity';
+import {
+  ApiDeleteUser,
+  ApiGetUserById,
+  ApiGetUsers,
+  ApiUpdateUser,
+} from './swagger/user.swagger';
 import { UserService } from './user.service';
 
 @Controller('users')
@@ -38,10 +44,18 @@ export class UserController {
   //   }
   // }
 
+  @ApiGetUsers()
   @Get()
   async findAll(): Promise<ResponseData<User>> {
     try {
       const users = await this.userService.findAll();
+      if (!users || users.length === 0) {
+        return new ResponseData<User>(
+          null,
+          HttpStatus.NOT_FOUND,
+          HttpMessage.NOT_FOUND,
+        );
+      }
       return new ResponseData<User>(users, HttpStatus.OK, HttpMessage.OK);
     } catch (error) {
       console.log(error);
@@ -53,6 +67,7 @@ export class UserController {
     }
   }
 
+  @ApiGetUserById()
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ResponseData<User>> {
     try {
@@ -77,6 +92,7 @@ export class UserController {
     }
   }
 
+  @ApiUpdateUser()
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -104,6 +120,7 @@ export class UserController {
     }
   }
 
+  @ApiDeleteUser()
   @Delete(':id')
   async remove(
     @Param('id') id: string,

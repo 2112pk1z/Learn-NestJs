@@ -13,7 +13,13 @@ export class UserService {
     private userRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<User | null> {
+    const existingUser = await this.userRepository.findOneBy({
+      email: createUserDto.email,
+    });
+    if (existingUser) {
+      return null;
+    }
     const newUser = this.userRepository.create(createUserDto);
     // newUser.created_At = new Date();
     // newUser.updated_At = new Date();

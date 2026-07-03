@@ -6,6 +6,7 @@ import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dto/loginRequest.dto';
+import { ApiLogin, ApiRegister } from './swagger/auth.swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -14,12 +15,20 @@ export class AuthController {
     private readonly userService: UserService,
   ) {}
 
+  @ApiRegister()
   @Post('/register')
   async create(
     @Body() createUserDto: CreateUserDto,
   ): Promise<ResponseData<User>> {
     try {
       const newUser = await this.userService.create(createUserDto);
+      if (!newUser) {
+        return new ResponseData<User>(
+          null,
+          HttpStatus.CONFLICT,
+          HttpMessage.CONFLICT,
+        );
+      }
       return new ResponseData<User>(
         newUser,
         HttpStatus.CREATED,
@@ -35,6 +44,7 @@ export class AuthController {
     }
   }
 
+  @ApiLogin()
   @Post('/login')
   async login(@Body() loginDTO: LoginRequestDto): Promise<ResponseData<User>> {
     const user = await this.userService.validateUser(
