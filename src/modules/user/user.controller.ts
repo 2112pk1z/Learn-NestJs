@@ -6,9 +6,12 @@ import {
   HttpStatus,
   Param,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
 import { User } from './entities/user.entity';
 import {
@@ -20,6 +23,8 @@ import {
 import { UserService } from './user.service';
 
 @Controller('users')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

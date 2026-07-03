@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
@@ -23,7 +24,18 @@ export function ApiRegister() {
       summary: 'Register a new user',
       description: 'API endpoint for user registration',
     }),
-    ApiOkResponse({ description: 'User registered successfully' }),
+    ApiCreatedResponse({ description: 'User registered successfully' }),
     ApiConflictResponse({ description: 'Email already exists' }),
+  );
+}
+
+export function ApiGetProfile() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Get user profile',
+      description: 'API endpoint to retrieve the authenticated user profile',
+    }),
+    ApiOkResponse({ description: 'Returns the user profile' }),
+    ApiUnauthorizedResponse({ description: 'Unauthorized access' }),
   );
 }

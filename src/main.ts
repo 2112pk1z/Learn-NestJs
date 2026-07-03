@@ -1,7 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule } from '@nestjs/swagger';
-import { DocumentBuilder } from 'node_modules/@nestjs/swagger/dist/document-builder';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -13,6 +12,7 @@ async function bootstrap() {
     .setTitle('API with NestJS')
     .setDescription('API developed throughout the API with NestJS course')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const documentFactory = () =>

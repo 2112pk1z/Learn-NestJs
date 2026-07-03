@@ -1,12 +1,25 @@
-import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { LocalAuthGuard } from 'src/guards/local-auth.guard';
 import { CreateUserDto } from '../user/dto/createUserRequest.dto';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
-import { LoginRequestDto } from './dto/loginRequest.dto';
-import { ApiLogin, ApiRegister } from './swagger/auth.swagger';
+import { LoginRequestDto } from './dto/request/loginRequest.dto';
+import { LoginResponseDto } from './dto/response/loginResponse.dto';
+import { ApiGetProfile, ApiLogin, ApiRegister } from './swagger/auth.swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -45,19 +58,28 @@ export class AuthController {
   }
 
   @ApiLogin()
+  @UseGuards(LocalAuthGuard)
   @Post('/login')
-  async login(@Body() loginDTO: LoginRequestDto): Promise<ResponseData<User>> {
-    const user = await this.userService.validateUser(
-      loginDTO.email,
-      loginDTO.password,
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Request() request: any,
+    @Body() loginDTO: LoginRequestDto,
+  ): Promise<ResponseData<LoginResponseDto>> {
+    const user = request.user as User;
+    const loginData = await this.authService.login(user);
+    return new ResponseData<LoginResponseDto>(
+      loginData,
+      HttpStatus.OK,
+      HttpMessage.OK,
     );
-    if (!user) {
-      return new ResponseData<User>(
-        null,
-        HttpStatus.UNAUTHORIZED,
-        HttpMessage.UNAUTHORIZED,
-      );
-    }
-    return new ResponseData<User>(user, HttpStatus.OK, HttpMessage.OK);
+  }
+
+  @ApiGetProfile()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('/profile')
+  async getProfile(@Request() request: any): Promise<ResponseData<User>> {
+    // const user = request.user as User;
+    return new ResponseData<User>(request.user, HttpStatus.OK, HttpMessage.OK);
   }
 }
