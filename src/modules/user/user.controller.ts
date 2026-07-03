@@ -7,14 +7,16 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { CreateUserDto } from './dto/createUserRequest.dto';
 import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './user.service';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 
 @ApiTags('Quản lý người dùng (Users)') // Đổi tên nhóm hiển thị trên Swagger UI
 @Controller('users')
@@ -56,6 +58,8 @@ export class UserController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard) // 🔒 Yêu cầu phải có Token hợp lệ mới được gọi API này
+  @ApiBearerAuth()         // 🔑 Hiển thị biểu tượng ổ khóa trên Swagger UI
   @ApiOperation({
     summary: 'Lấy danh sách tất cả người dùng',
     description: 'Truy vấn toàn bộ danh sách người dùng đang có trong hệ thống.',

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
@@ -7,6 +7,7 @@ import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dto/loginRequest.dto';
+import { LocalAuthGuard } from 'src/guards/local-auth.guard';
 
 @ApiTags('Xác thực (Auth)')
 @Controller('auth')
@@ -63,20 +64,17 @@ export class AuthController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Sai email hoặc mật khẩu.',
   })
-  async login(@Body() loginDTO: LoginRequestDto): Promise<ResponseData<User>> {
-    const user = await this.userService.validateUser(
-      loginDTO.email,
-      loginDTO.password,
-    );
+  @UseGuards(LocalAuthGuard)
+  @Post('/login')
+  @ApiOperation({
+    summary: 'Đăng nhập hệ thống',
+    description: 'Xác thực người dùng và trả về JWT Token.',
+  })
+  @ApiBody({ type: LoginRequestDto })
+  async login(@Request() req): Promise<ResponseData<any>> {
+    // Nhờ LocalAuthGuard, req.user đã có sẵn thông tin nếu email/pass đúng
+    const tokenData = await this.authService.login(req.user);
     
-    if (!user) {
-      return new ResponseData<User>(
-        null,
-        HttpStatus.UNAUTHORIZED,
-        HttpMessage.UNAUTHORIZED,
-      );
-    }
-    
-    return new ResponseData<User>(user, HttpStatus.OK, HttpMessage.OK);
+    return new ResponseData<any>(tokenData, HttpStatus.OK, HttpMessage.OK);
   }
 }
