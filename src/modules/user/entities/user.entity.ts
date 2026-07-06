@@ -2,9 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ChatSession } from './chat-session.entity';
 
 @Entity('Users')
 export class User {
@@ -34,4 +36,8 @@ export class User {
 
   @UpdateDateColumn()
   updated_At: Date;
+
+  @OneToMany(() => ChatSession, (session) => session.user)
+  sessions: ChatSession[];
+}
 }
