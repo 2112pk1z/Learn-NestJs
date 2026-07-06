@@ -16,6 +16,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // Hàm này tự động chạy nếu token hợp lệ
   async validate(payload: any) {
-    return { id: payload.sub, email: payload.email };
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

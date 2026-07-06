@@ -8,3 +8,7 @@ export enum HttpMessage {
   CONFLICT = 'Resource already exists',
   INTERNAL_SERVER_ERROR = 'Internal server error',
 }
+export enum Role {
+  USER = 'user',
+  ADMIN = 'admin',
+}

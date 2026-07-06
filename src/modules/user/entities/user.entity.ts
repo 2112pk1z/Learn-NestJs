@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ChatSession } from './chat-session.entity';
+import { Role } from 'src/global/globalEnum';
 
 @Entity('Users')
 export class User {
@@ -37,7 +38,13 @@ export class User {
   @UpdateDateColumn()
   updated_At: Date;
 
+  @Column({
+    type: 'enum',
+    enum: Role,
+    default: Role.USER,
+  })
+  role: Role;
+
   @OneToMany(() => ChatSession, (session) => session.user)
   sessions: ChatSession[];
-}
 }

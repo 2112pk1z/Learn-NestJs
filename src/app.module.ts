@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from './modules/user/entities/user.entity';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ChatMessage } from './modules/user/entities/chat-message.entity';
+import { ChatSession } from './modules/user/entities/chat-session.entity';
 
 @Module({
   imports: [
@@ -22,8 +24,8 @@ import { AuthModule } from './modules/auth/auth.module';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User],
-        synchronize: true,
+        entities: [User, ChatSession, ChatMessage],
+        synchronize: false,
       }),
     }),
     

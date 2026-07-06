@@ -11,12 +11,14 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
-import { HttpMessage } from 'src/global/globalEnum';
+import { HttpMessage, Role } from 'src/global/globalEnum';
 import { CreateUserDto } from './dto/createUserRequest.dto';
 import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Roles } from 'src/decorators/roles.decorator';
 
 @ApiTags('Quản lý người dùng (Users)') // Đổi tên nhóm hiển thị trên Swagger UI
 @Controller('users')
@@ -168,6 +170,9 @@ export class UserController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard) // 🔒 Yêu cầu phải có Token hợp lệ mới được gọi API này
+  @Roles(Role.ADMIN) // Chỉ Admin mới có quyền xóa người dùng
+  @ApiBearerAuth() // 🔑 Hiển thị biểu tượng ổ khóa trên Swagger UI
   @ApiOperation({
     summary: 'Xóa người dùng khỏi hệ thống',
     description: 'Xóa hoàn toàn bản ghi người dùng ra khỏi cơ sở dữ liệu dựa trên ID truyền vào.',
