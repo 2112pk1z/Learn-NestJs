@@ -6,14 +6,16 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
-import { UpdateUserDto } from './dto/UpdateUserRequest.dto';
-import { User } from './entities/user.entity';
+import { RoleGuard } from 'src/guards/role.guard';
+import { UpdateUserDto } from './dtos/UpdateUserRequest.dto';
+import { User } from './entity/user.entity';
 import {
   ApiDeleteUser,
   ApiGetUserById,
@@ -51,6 +53,7 @@ export class UserController {
 
   @ApiGetUsers()
   @Get()
+  @UseGuards(new RoleGuard(['admin']))
   async findAll(): Promise<ResponseData<User>> {
     try {
       const users = await this.userService.findAll();
@@ -102,11 +105,24 @@ export class UserController {
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Req() req: any,
   ): Promise<ResponseData<User>> {
     try {
-      const updatedUser = await this.userService.update(+id, updateUserDto);
+      const updatedUser = await this.userService.update(
+        +id,
+        updateUserDto,
+        req.user as User,
+      );
 
-      if (!updatedUser) {
+      if (updatedUser.type === 'FORBIDDEN') {
+        return new ResponseData<User>(
+          null,
+          HttpStatus.FORBIDDEN,
+          HttpMessage.FORBIDDEN,
+        );
+      }
+
+      if (updatedUser.type === 'NOT_FOUND') {
         return new ResponseData<User>(
           null,
           HttpStatus.NOT_FOUND,
@@ -114,7 +130,11 @@ export class UserController {
         );
       }
 
-      return new ResponseData<User>(updatedUser, HttpStatus.OK, HttpMessage.OK);
+      return new ResponseData<User>(
+        updatedUser.user,
+        HttpStatus.OK,
+        HttpMessage.OK,
+      );
     } catch (error) {
       console.error(`Lỗi cập nhật user ID ${id}:`, error);
       return new ResponseData<User>(
@@ -125,6 +145,7 @@ export class UserController {
     }
   }
 
+  @UseGuards(new RoleGuard(['admin']))
   @ApiDeleteUser()
   @Delete(':id')
   async remove(
