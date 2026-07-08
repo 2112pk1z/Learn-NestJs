@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpCode,
@@ -9,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -29,36 +31,29 @@ export class AuthController {
   ) {}
 
   @ApiRegister()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('/register')
   async create(
     @Body() createUserDto: CreateUserDto,
   ): Promise<ResponseData<User>> {
-    try {
-      const newUser = await this.userService.create(createUserDto);
-      if (!newUser) {
-        return new ResponseData<User>(
-          null,
-          HttpStatus.CONFLICT,
-          HttpMessage.CONFLICT,
-        );
-      }
-      return new ResponseData<User>(
-        newUser,
-        HttpStatus.CREATED,
-        HttpMessage.CREATED,
-      );
-    } catch (error) {
-      console.error('Lỗi khi tạo user:', error);
-      return new ResponseData<User>(
-        null,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        HttpMessage.INTERNAL_SERVER_ERROR,
+    const newUser = await this.userService.create(createUserDto);
+
+    if (!newUser) {
+      throw new ConflictException(
+        new ResponseData<User>(null, HttpStatus.CONFLICT, HttpMessage.CONFLICT),
       );
     }
+
+    return new ResponseData<User>(
+      newUser,
+      HttpStatus.CREATED,
+      HttpMessage.CREATED,
+    );
   }
 
   @ApiLogin()
   @UseGuards(LocalAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('/login')
   @HttpCode(HttpStatus.OK)
   async login(

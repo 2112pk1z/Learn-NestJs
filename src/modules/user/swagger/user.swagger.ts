@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -12,7 +13,6 @@ export function ApiGetUsers() {
       description: 'API endpoint for retrieving all users',
     }),
     ApiOkResponse({ description: 'Users retrieved successfully' }),
-    ApiNotFoundResponse({ description: 'No users found' }),
   );
 }
 
@@ -35,6 +35,7 @@ export function ApiUpdateUser() {
     }),
     ApiOkResponse({ description: 'User updated successfully' }),
     ApiNotFoundResponse({ description: 'User not found' }),
+    ApiForbiddenResponse({ description: 'You cannot update another user' }),
   );
 }
 

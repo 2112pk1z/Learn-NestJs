@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsDateString,
   IsOptional,
   IsPhoneNumber,
@@ -49,5 +50,6 @@ export class UpdateUserDto {
     example: true,
   })
   @IsOptional()
+  @IsBoolean({ message: 'isActive must be a boolean value' })
   isActive: boolean;
 }

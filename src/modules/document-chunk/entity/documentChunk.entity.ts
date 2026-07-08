@@ -13,9 +13,9 @@ export class DocumentChunk {
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;
 
-  //   // Số 768 hoặc 1536 tùy thuộc vào model AI (VD: text-embedding của Gemini/OpenAI)
-  //   @Column({ type: 'vector', length: 768, nullable: true })
-  //   embedding: string;
+  // Số 768 hoặc 1536 tùy thuộc vào model AI (VD: text-embedding của Gemini/OpenAI)
+  @Column('vector', { length: 768, nullable: true })
+  embedding: number[];
 
   @ManyToOne(() => Document, (document) => document.chunks, {
     onDelete: 'CASCADE',

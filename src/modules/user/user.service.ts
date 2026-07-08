@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { PermissionChecker } from 'src/helpers/checkPermission.helper';
@@ -15,16 +15,21 @@ export type UpdateUserResult =
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User | null> {
+    this.logger.log(`Attempting to create user email=${createUserDto.email}`);
     const existingUser = await this.userRepository.findOneBy({
       email: createUserDto.email,
     });
     if (existingUser) {
+      this.logger.warn(
+        `Create user failed. Email already exists email=${createUserDto.email}`,
+      );
       return null;
     }
     const newUser = this.userRepository.create({
@@ -33,7 +38,11 @@ export class UserService {
     });
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     newUser.password = hashedPassword;
-    return this.userRepository.save(newUser);
+    // this.logger.log(`User created email=${createUserDto.email}`);
+    // return this.userRepository.save(newUser);
+    const savedUser = await this.userRepository.save(newUser);
+    this.logger.log(`User created email=${createUserDto.email}`);
+    return savedUser;
   }
 
   async findAll(): Promise<User[]> {
@@ -49,11 +58,16 @@ export class UserService {
     updateUserDto: UpdateUserDto,
     currentUser: User,
   ): Promise<UpdateUserResult> {
+    this.logger.log(`Attempting to update user id=${id}`);
     if (!PermissionChecker.checkPermission(id, currentUser)) {
+      this.logger.warn(
+        `Update user failed. User does not have permission to update id=${id}`,
+      );
       return { type: 'FORBIDDEN' };
     }
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {
+      this.logger.warn(`Update user failed. User not found id=${id}`);
       return { type: 'NOT_FOUND' };
     }
     if (updateUserDto.password) {
@@ -61,7 +75,7 @@ export class UserService {
       updateUserDto.password = hashedPassword;
     }
     await this.userRepository.update(id, updateUserDto);
-
+    this.logger.log(`User updated id=${id}`);
     const updatedUser = await this.userRepository.findOneBy({ id });
     return {
       type: 'SUCCESS',
@@ -70,8 +84,14 @@ export class UserService {
   }
 
   async remove(id: number): Promise<boolean> {
+    this.logger.log(`Deleting user id=${id}`);
     const result = await this.userRepository.delete(id);
-    return result.affected ? result.affected > 0 : false;
+    if (!result.affected) {
+      this.logger.warn(`Delete failed. User not found id=${id}`);
+      return false;
+    }
+    this.logger.log(`User deleted id=${id}`);
+    return true;
   }
 
   async findByEmail(email: string): Promise<User | null> {
