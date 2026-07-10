@@ -1,0 +1,42 @@
+
+services:
+  # Dịch vụ 1: Database PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: nest_crud_postgres
+    restart: always
+    # Đọc trực tiếp các biến môi trường từ file .env của bạn
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432" # Ánh xạ cổng ra ngoài để bạn dùng DBeaver/pgAdmin kết nối
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Lưu trữ dữ liệu DB không bị mất khi tắt container
+
+  # Dịch vụ 2: API NestJS của bạn
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest_crud_api
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - .:/usr/src/app # Đồng bộ code từ máy tính vào container (Hot-reload)
+      - /usr/src/app/node_modules # Tránh ghi đè node_modules của container
+    depends_on:
+      - db # Đảm bảo Database chạy lên trước rồi API mới chạy
+
+# Khai báo volume để lưu data
+volumes:
+  postgres_data:

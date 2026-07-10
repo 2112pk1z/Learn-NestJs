@@ -24,7 +24,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Đăng ký thành công.',
+    description: 'Đăng ký thành công.', 
   })
   @ApiResponse({
     status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -52,7 +52,7 @@ export class AuthController {
 
   @Post('/login')
   @ApiOperation({
-    summary: 'Đăng nhập hệ thống',
+    summary: 'Đăng nhập hệ thống - Đã test Hot Reload ahaha',
     description: 'Kiểm tra thông tin đăng nhập. Hiện tại đang trả về object User, sẽ nâng cấp trả về JWT Token trong Tuần 2.',
   })
   @ApiBody({ type: LoginRequestDto })
