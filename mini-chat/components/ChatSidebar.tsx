@@ -1,12 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useChatMessageStore } from "@/store/useChatMessageStore";
 import { useChatSessionStore } from "@/store/useChatSessionStore";
-import { Check, MessageSquare, Pencil, Plus, X } from "lucide-react";
+import {
+  Check,
+  MessageSquare,
+  PanelLeftClose,
+  Pencil,
+  Plus,
+  Scale,
+  Search,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
-export default function ChatSidebar() {
+interface ChatSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
@@ -28,94 +43,150 @@ export default function ChatSidebar() {
   }, [fetchSessions]);
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col border-r bg-slate-50 p-3">
-      <div className="mb-4 px-2 text-lg font-semibold">Mini Chat</div>
+    <>
+      <button
+        type="button"
+        aria-label="Đóng thanh bên"
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-[1px] transition-opacity md:hidden",
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
 
-      <Button
-        variant="ghost"
-        className="mb-4 justify-start gap-2"
-        onClick={async () => {
-          const newSession = await createSession();
-
-          if (newSession) {
-            await createWelcomeMessage(newSession.id);
-            selectSession(newSession.id);
-          }
-        }}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-[#f7f9ff] p-3 shadow-xl shadow-slate-200/60 transition-[transform,width,padding] duration-300 ease-out md:static md:z-auto md:translate-x-0 md:shadow-none",
+          isOpen
+            ? "translate-x-0 md:w-64"
+            : "-translate-x-full md:w-0 md:border-r-0 md:p-0",
+        )}
       >
-        <Plus className="h-4 w-4" />
-        Đoạn chat mới
-      </Button>
-
-      <div className="mb-2 flex items-center justify-between px-2">
-        <span className="text-xs font-medium text-slate-500">Phiên chat</span>
-        <span className="text-xs text-slate-400">{sessions.length}</span>
-      </div>
-
-      <div className="space-y-1">
-        {sessions.map((session) => {
-          const isEditing = editingSessionId === session.id;
-
-          return (
-            <div
-              key={session.id}
-              className={`group flex items-center gap-1 rounded-md px-2 py-1 hover:bg-slate-200 ${
-                selectedSessionId === session.id
-                  ? "bg-slate-200 font-medium"
-                  : ""
-              }`}
-            >
-              {isEditing ? (
-                <>
-                  <input
-                    value={editingTitle}
-                    onChange={(e) => setEditingTitle(e.target.value)}
-                    className="min-w-0 flex-1 rounded border bg-white px-2 py-1 text-sm outline-none"
-                    autoFocus
-                  />
-
-                  <button
-                    onClick={async () => {
-                      await updateSessionTitle(session.id, editingTitle);
-                      setEditingSessionId(null);
-                    }}
-                    className="rounded p-1 hover:bg-slate-300"
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => setEditingSessionId(null)}
-                    className="rounded p-1 hover:bg-slate-300"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => selectSession(session.id)}
-                    className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
-                  >
-                    <MessageSquare className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{session.title}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setEditingSessionId(session.id);
-                      setEditingTitle(session.title);
-                    }}
-                    className="invisible rounded p-1 hover:bg-slate-300 group-hover:visible"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+        <div className="mb-4 flex items-center justify-between gap-3 px-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+              <Scale className="size-5" />
             </div>
-          );
-        })}
-      </div>
-    </aside>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-slate-900">
+                Legal AI
+              </div>
+              <div className="text-xs text-slate-500">Trợ lý pháp lý</div>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            title="Thu thanh bên"
+            className="text-slate-500 hover:bg-white hover:text-slate-900"
+          >
+            <PanelLeftClose className="size-4" />
+          </Button>
+        </div>
+
+        <Button
+          variant="ghost"
+          className="mb-3 h-10 justify-start gap-2 rounded-full border border-slate-200 bg-white px-4 text-slate-700 shadow-sm hover:bg-blue-50 hover:text-blue-700"
+          onClick={async () => {
+            const newSession = await createSession();
+
+            if (newSession) {
+              await createWelcomeMessage(newSession.id);
+              selectSession(newSession.id);
+            }
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Cuộc trò chuyện mới
+        </Button>
+
+        <div className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-transparent bg-white/75 px-3 text-sm text-slate-400 shadow-sm">
+          <Search className="size-4 shrink-0" />
+          <span className="truncate">Tìm kiếm trò chuyện...</span>
+        </div>
+
+        <div className="mb-2 flex items-center justify-between px-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Phiên chat
+          </span>
+          <span className="text-xs text-slate-400">{sessions.length}</span>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+          {sessions.map((session) => {
+            const isEditing = editingSessionId === session.id;
+
+            return (
+              <div
+                key={session.id}
+                className={cn(
+                  "group flex items-center gap-1 rounded-lg px-2 py-1.5 text-slate-600 transition-colors hover:bg-white hover:text-slate-900",
+                  selectedSessionId === session.id &&
+                    "bg-white font-medium text-blue-700 shadow-sm",
+                )}
+              >
+                {isEditing ? (
+                  <>
+                    <input
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      className="min-w-0 flex-1 rounded-lg border border-blue-100 bg-white px-2 py-1 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      autoFocus
+                    />
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await updateSessionTitle(session.id, editingTitle);
+                        setEditingSessionId(null);
+                      }}
+                      className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingSessionId(null)}
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectSession(session.id);
+                        if (window.innerWidth < 768) onClose();
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
+                    >
+                      <MessageSquare className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{session.title}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingSessionId(session.id);
+                        setEditingTitle(session.title);
+                      }}
+                      className="invisible rounded-lg p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-700 group-hover:visible"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    </>
   );
 }
