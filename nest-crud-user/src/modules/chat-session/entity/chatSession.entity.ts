@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('chat_sessions')
@@ -19,6 +20,12 @@ export class ChatSession {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @Column({ default: true })
+  status: boolean;
 
   @ManyToOne(() => User, (user) => user.chatSessions, { onDelete: 'CASCADE' })
   user: User;

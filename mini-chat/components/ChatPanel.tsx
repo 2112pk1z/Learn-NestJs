@@ -4,6 +4,7 @@ import ChatInput from "@/components/ChatInput";
 import ChatMessage from "@/components/ChatMessage";
 import { Button } from "@/components/ui/button";
 import { useChatScroll } from "@/hooks/useChatScroll";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useChatMessageStore } from "@/store/useChatMessageStore";
 import { useChatSessionStore } from "@/store/useChatSessionStore";
 import {
@@ -15,7 +16,9 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import ChatEmptyState from "./ChatEmptyState";
 
 interface ChatPanelProps {
   isSidebarOpen: boolean;
@@ -29,6 +32,10 @@ export default function ChatPanel({
   const selectedSessionId = useChatSessionStore(
     (state) => state.selectedSessionId,
   );
+
+  const router = useRouter();
+
+  const { user, isAuthenticated, logout } = useAuthStore();
 
   const {
     messages,
@@ -47,6 +54,11 @@ export default function ChatPanel({
     if (!selectedSessionId) return;
     fetchHistory(selectedSessionId);
   }, [selectedSessionId, fetchHistory]);
+
+  function handleLogout() {
+    logout();
+    router.replace("/login");
+  }
 
   return (
     <section className="relative flex min-w-0 flex-1 flex-col bg-[#fbfdff]">
@@ -76,30 +88,74 @@ export default function ChatPanel({
           </div>
         </div>
 
-        <Link
-          href="/login"
-          className="inline-flex h-9 items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-        >
-          Đăng nhập
-        </Link>
+        <div className="flex items-center gap-6">
+          {isAuthenticated && user ? (
+            <>
+              <span className="hidden max-w-[300px] truncate text-sm text-slate-600 sm:inline">
+                Xin chào,{" "}
+                <Link
+                  href="/profile"
+                  className="font-medium text-slate-900 underline underline-offset-4 transition-colors hover:text-blue-700"
+                >
+                  {user.name}
+                </Link>
+              </span>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="shrink-0 text-sm font-medium text-slate-500 underline underline-offset-4 transition-colors hover:text-red-600"
+              >
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm font-medium text-slate-500 underline underline-offset-4 transition-colors hover:text-blue-700"
+            >
+              Đăng nhập
+            </Link>
+          )}
+        </div>
       </header>
+      <div className="relative min-h-0 flex-1">
+        <div ref={ref} className="h-full overflow-y-auto">
+          {!selectedSessionId ? (
+            <ChatEmptyState />
+          ) : (
+            <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+              {messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  role={msg.role}
+                  content={msg.content}
+                />
+              ))}
 
-      <div ref={ref} className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} role={msg.role} content={msg.content} />
-          ))}
-
-          {isLoading && (
-            <div className="flex animate-pulse items-center gap-2 px-2 text-sm text-slate-400">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-              <span>Đang xử lý dữ liệu với Server...</span>
+              {isLoading && (
+                <div className="flex animate-pulse items-center gap-2 px-2 text-sm text-slate-400">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  <span>Đang xử lý dữ liệu với Server...</span>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {selectedSessionId && (
+          <Button
+            onClick={scrollToBottom}
+            variant="outline"
+            size="icon"
+            className="absolute bottom-4 right-4 z-10 rounded-full border-slate-200 bg-white shadow-md sm:right-6"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {messageError && (
+      {selectedSessionId && messageError && (
         <div className="mx-auto mb-2 w-full max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             <div className="flex items-center gap-2">
@@ -118,19 +174,11 @@ export default function ChatPanel({
         </div>
       )}
 
-      <Button
-        onClick={scrollToBottom}
-        variant="outline"
-        size="icon"
-        className="absolute bottom-24 right-4 z-10 rounded-full border-slate-200 bg-white text-slate-500 shadow-md hover:bg-blue-50 hover:text-blue-700 sm:right-6"
-        title="Cuộn xuống dưới"
-      >
-        <ArrowDown className="h-4 w-4" />
-      </Button>
-
-      <div className={isLoading ? "pointer-events-none opacity-60" : ""}>
-        <ChatInput />
-      </div>
+      {selectedSessionId && (
+        <div className={isLoading ? "pointer-events-none opacity-60" : ""}>
+          <ChatInput />
+        </div>
+      )}
     </section>
   );
 }

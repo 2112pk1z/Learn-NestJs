@@ -1,9 +1,11 @@
-import { chatMessageApi } from "@/services/chatMessageApi.service";
-import { useChatSessionStore } from "@/store/useChatSessionStore";
+import {
+  buildMessageStreamUrl,
+  chatMessageApi,
+} from "@/services/chatMessageApi.service";
 import type { ChatMessage } from "@/types/chat.type";
+import { EventSourcePolyfill } from "event-source-polyfill";
 import { create } from "zustand";
-
-const DEFAULT_SESSION_TITLE = "Cuộc trò chuyện mới";
+import { useChatSessionStore } from "./useChatSessionStore";
 
 interface ChatMessageState {
   messages: ChatMessage[];
@@ -11,11 +13,12 @@ interface ChatMessageState {
   isSendingMessage: boolean;
   messageError: string | null;
 
-  fetchHistory: (sessionId: string) => Promise<void>;
+  fetchHistory: (sessionId: string | number) => Promise<void>;
   addMessage: (text: string) => Promise<void>;
-  createWelcomeMessage: (sessionId: string) => Promise<void>;
   clearMessageError: () => void;
 }
+
+let latestHistoryRequestId = 0;
 
 export const useChatMessageStore = create<ChatMessageState>((set) => ({
   messages: [],
@@ -25,37 +28,35 @@ export const useChatMessageStore = create<ChatMessageState>((set) => ({
 
   clearMessageError: () => set({ messageError: null }),
 
-  fetchHistory: async (sessionId: string) => {
-    set({ isFetchingMessages: true, messageError: null, messages: [] });
+  fetchHistory: async (sessionId: string | number) => {
+    const requestId = ++latestHistoryRequestId;
+
+    set({
+      isFetchingMessages: true,
+      messageError: null,
+      messages: [],
+    });
 
     try {
       const messages = await chatMessageApi.getMessages(sessionId);
+      if (requestId !== latestHistoryRequestId) return;
+
       set({ messages });
     } catch {
-      set({ messageError: "Không thể tải lịch sử đoạn chat từ server!" });
-    } finally {
-      set({ isFetchingMessages: false });
-    }
-  },
+      if (requestId !== latestHistoryRequestId) return;
 
-  createWelcomeMessage: async (sessionId: string) => {
-    set({ messageError: null });
-    try {
-      const welcomeMessage = await chatMessageApi.createMessage({
-        sessionId,
-        role: "assistant",
-        content: "Xin chào, tôi có thể giúp gì cho bạn?",
+      set({
+        messageError: "Không thể tải lịch sử đoạn chat từ server!",
       });
-
-      set({ messages: [welcomeMessage] });
-    } catch {
-      set({ messageError: "Không thể tạo tin nhắn chào mừng!" });
+    } finally {
+      if (requestId === latestHistoryRequestId) {
+        set({ isFetchingMessages: false });
+      }
     }
   },
 
   addMessage: async (text: string) => {
-    const { selectedSessionId, sessions, updateSessionTitle } =
-      useChatSessionStore.getState();
+    const { selectedSessionId, fetchSessions } = useChatSessionStore.getState();
 
     if (!selectedSessionId) {
       set({
@@ -64,19 +65,15 @@ export const useChatMessageStore = create<ChatMessageState>((set) => ({
       return;
     }
 
+    const tempUserId = `temp-user-${Date.now()}`;
+
     const tempUserMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: tempUserId,
       sessionId: selectedSessionId,
       role: "user",
       content: text,
       createdAt: new Date().toISOString(),
     };
-
-    const currentSession = sessions.find(
-      (session) => session.id === selectedSessionId,
-    );
-
-    const shouldRenameSession = currentSession?.title === DEFAULT_SESSION_TITLE;
 
     set((state) => ({
       messages: [...state.messages, tempUserMsg],
@@ -85,32 +82,94 @@ export const useChatMessageStore = create<ChatMessageState>((set) => ({
     }));
 
     try {
-      await chatMessageApi.createMessage({
+      const savedUserMessage = await chatMessageApi.createUserMessage({
         sessionId: selectedSessionId,
-        role: "user",
         content: text,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message.id === tempUserId ? savedUserMessage : message,
+        ),
+      }));
 
-      const assistantMessage = await chatMessageApi.createMessage({
-        sessionId: selectedSessionId,
-        role: "assistant",
-        content: `Hệ thống đã lưu trữ thành công tin nhắn: "${text}"`,
-      });
+      const token = localStorage.getItem("accessToken");
 
-      if (shouldRenameSession) {
-        const newTitle = text.length > 40 ? `${text.slice(0, 40)}...` : text;
-        await updateSessionTitle(selectedSessionId, newTitle);
+      if (!token) {
+        set({
+          messageError: "Bạn cần đăng nhập để gửi tin nhắn!",
+          isSendingMessage: false,
+        });
+        return;
       }
 
+      const streamUrl = buildMessageStreamUrl({
+        sessionId: selectedSessionId,
+        userMessageId: savedUserMessage.id,
+      });
+
+      const tempAssistantId = `temp-assistant-${Date.now()}`;
+
+      const tempAssistantMsg: ChatMessage = {
+        id: tempAssistantId,
+        sessionId: selectedSessionId,
+        role: "assistant",
+        content: "",
+        createdAt: new Date().toISOString(),
+      };
+
       set((state) => ({
-        messages: [...state.messages, assistantMessage],
+        messages: [...state.messages, tempAssistantMsg],
       }));
+
+      const eventSource = new EventSourcePolyfill(streamUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      eventSource.addEventListener("chunk", (event) => {
+        const messageEvent = event as MessageEvent;
+        const data = JSON.parse(messageEvent.data) as { content: string };
+
+        set((state) => ({
+          messages: state.messages.map((message) =>
+            message.id === tempAssistantId
+              ? { ...message, content: message.content + data.content }
+              : message,
+          ),
+        }));
+      });
+
+      eventSource.addEventListener("done", (event) => {
+        const messageEvent = event as MessageEvent;
+        const assistantMessage = JSON.parse(messageEvent.data) as ChatMessage;
+
+        set((state) => ({
+          messages: state.messages.map((message) =>
+            message.id === tempAssistantId ? assistantMessage : message,
+          ),
+          isSendingMessage: false,
+        }));
+
+        void fetchSessions();
+
+        eventSource.close();
+      });
+
+      eventSource.onerror = () => {
+        set({
+          messageError: "Kết nối phản hồi bị gián đoạn!",
+          isSendingMessage: false,
+        });
+
+        eventSource.close();
+      };
     } catch {
-      set({ messageError: "Không thể gửi tin nhắn, vui lòng thử lại!" });
-    } finally {
-      set({ isSendingMessage: false });
+      set({
+        messageError: "Không thể gửi tin nhắn, vui lòng thử lại!",
+        isSendingMessage: false,
+      });
     }
   },
 }));

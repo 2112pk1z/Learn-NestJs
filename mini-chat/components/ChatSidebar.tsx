@@ -2,18 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useChatMessageStore } from "@/store/useChatMessageStore";
+
 import { useChatSessionStore } from "@/store/useChatSessionStore";
 import {
   Check,
   MessageSquare,
+  MoreVertical,
   PanelLeftClose,
   Pencil,
   Plus,
   Scale,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface ChatSidebarProps {
@@ -22,21 +25,24 @@ interface ChatSidebarProps {
 }
 
 export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [openMenuSessionId, setOpenMenuSessionId] = useState<
+    string | number | null
+  >(null);
+  const [editingSessionId, setEditingSessionId] = useState<
+    string | number | null
+  >(null);
   const [editingTitle, setEditingTitle] = useState("");
+
+  const router = useRouter();
 
   const {
     sessions,
     selectedSessionId,
     fetchSessions,
-    selectSession,
     createSession,
     updateSessionTitle,
+    deleteSession,
   } = useChatSessionStore();
-
-  const createWelcomeMessage = useChatMessageStore(
-    (state) => state.createWelcomeMessage,
-  );
 
   useEffect(() => {
     fetchSessions();
@@ -56,7 +62,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-[#f7f9ff] p-3 shadow-xl shadow-slate-200/60 transition-[transform,width,padding] duration-300 ease-out md:static md:z-auto md:translate-x-0 md:shadow-none",
+          "fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-[#f7f9ff] p-3 shadow-xl shadow-slate-200/60 transition-[transform,width,padding] duration-300 ease-out md:transition-none md:static md:z-auto md:translate-x-0 md:shadow-none",
           isOpen
             ? "translate-x-0 md:w-64"
             : "-translate-x-full md:w-0 md:border-r-0 md:p-0",
@@ -94,8 +100,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
             const newSession = await createSession();
 
             if (newSession) {
-              await createWelcomeMessage(newSession.id);
-              selectSession(newSession.id);
+              router.push(`/sessions/${newSession.id}`);
             }
           }}
         >
@@ -124,7 +129,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                 key={session.id}
                 className={cn(
                   "group flex items-center gap-1 rounded-lg px-2 py-1.5 text-slate-600 transition-colors hover:bg-white hover:text-slate-900",
-                  selectedSessionId === session.id &&
+                  String(selectedSessionId) === String(session.id) &&
                     "bg-white font-medium text-blue-700 shadow-sm",
                 )}
               >
@@ -161,8 +166,12 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        selectSession(session.id);
-                        if (window.innerWidth < 768) onClose();
+                        setOpenMenuSessionId(null);
+                        router.push(`/sessions/${session.id}`);
+
+                        if (window.innerWidth < 768) {
+                          onClose();
+                        }
                       }}
                       className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
                     >
@@ -170,16 +179,61 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                       <span className="truncate">{session.title}</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingSessionId(session.id);
-                        setEditingTitle(session.title);
-                      }}
-                      className="invisible rounded-lg p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-700 group-hover:visible"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenMenuSessionId(
+                            openMenuSessionId === session.id
+                              ? null
+                              : session.id,
+                          );
+                        }}
+                        className="invisible rounded-lg p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-700 group-hover:visible"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+
+                      {openMenuSessionId === session.id && (
+                        <div className="absolute right-0 top-7 z-20 w-32 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSessionId(session.id);
+                              setEditingTitle(session.title);
+                              setOpenMenuSessionId(null);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Sửa
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const confirmed = window.confirm(
+                                "Bạn có chắc muốn xóa phiên chat này?",
+                              );
+                              if (!confirmed) return;
+                              await deleteSession(session.id);
+                              setOpenMenuSessionId(null);
+
+                              if (
+                                String(selectedSessionId) === String(session.id)
+                              ) {
+                                router.push("/");
+                              }
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Xóa
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
               </div>

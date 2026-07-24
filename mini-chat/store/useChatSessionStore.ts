@@ -4,15 +4,19 @@ import { create } from "zustand";
 
 interface ChatSessionState {
   sessions: ChatSession[];
-  selectedSessionId: string | null;
+  selectedSessionId: string | number | null;
   isFetchingSessions: boolean;
   isCreatingSession: boolean;
   sessionError: string | null;
 
   fetchSessions: () => Promise<void>;
-  selectSession: (sessionId: string) => void;
+  selectSession: (sessionId: string | number | null) => void;
   createSession: () => Promise<ChatSession | null>;
-  updateSessionTitle: (sessionId: string, title: string) => Promise<void>;
+  updateSessionTitle: (
+    sessionId: string | number,
+    title: string,
+  ) => Promise<void>;
+  deleteSession: (sessionId: string | number) => Promise<void>;
   clearSessionError: () => void;
 }
 
@@ -38,7 +42,6 @@ export const useChatSessionStore = create<ChatSessionState>((set) => ({
 
       set({
         sessions: sortedSessions,
-        selectedSessionId: sortedSessions[0]?.id ?? null,
       });
     } catch {
       set({ sessionError: "Không thể tải danh sách phiên chat!" });
@@ -47,7 +50,7 @@ export const useChatSessionStore = create<ChatSessionState>((set) => ({
     }
   },
 
-  selectSession: (sessionId: string) => {
+  selectSession: (sessionId: string | number | null) => {
     set({ selectedSessionId: sessionId });
   },
 
@@ -70,7 +73,7 @@ export const useChatSessionStore = create<ChatSessionState>((set) => ({
     }
   },
 
-  updateSessionTitle: async (sessionId: string, title: string) => {
+  updateSessionTitle: async (sessionId: string | number, title: string) => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
@@ -82,11 +85,29 @@ export const useChatSessionStore = create<ChatSessionState>((set) => ({
 
       set((state) => ({
         sessions: state.sessions.map((session) =>
-          session.id === sessionId ? updatedSession : session,
+          String(session.id) === String(sessionId) ? updatedSession : session,
         ),
       }));
     } catch {
       set({ sessionError: "Không thể đổi tên phiên chat!" });
+    }
+  },
+
+  deleteSession: async (sessionId: string | number) => {
+    try {
+      await chatSessionApi.deleteSession(sessionId);
+
+      set((state) => ({
+        sessions: state.sessions.filter(
+          (session) => String(session.id) !== String(sessionId),
+        ),
+        selectedSessionId:
+          String(state.selectedSessionId) === String(sessionId)
+            ? null
+            : state.selectedSessionId,
+      }));
+    } catch {
+      set({ sessionError: "Không thể xóa phiên chat!" });
     }
   },
 }));

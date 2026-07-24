@@ -11,6 +11,7 @@ import { ChatMessagesModule } from './modules/chat-messages/chat-messages.module
 import { ChatSessionModule } from './modules/chat-session/chat-session.module';
 import { DocumentChunkModule } from './modules/document-chunk/document-chunk.module';
 import { DocumentModule } from './modules/document/document.module';
+import { MinioModule } from './modules/minio/minio.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
@@ -47,6 +48,7 @@ import { UserModule } from './modules/user/user.module';
     ChatMessagesModule,
     DocumentModule,
     DocumentChunkModule,
+    MinioModule,
   ],
   controllers: [AppController],
   providers: [

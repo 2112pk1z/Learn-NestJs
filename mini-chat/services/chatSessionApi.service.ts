@@ -13,17 +13,23 @@ export const chatSessionApi = {
   async createSession(): Promise<ChatSession> {
     const response = await api.post("/sessions", {
       title: DEFAULT_TITLE,
-      createdAt: new Date().toISOString(),
+    });
+    return unwrapResponse<ChatSession>(response);
+  },
+
+  async updateTitle(
+    sessionId: string | number,
+    title: string,
+  ): Promise<ChatSession> {
+    const response = await api.put(`/sessions/${sessionId}`, {
+      title,
     });
 
     return unwrapResponse<ChatSession>(response);
   },
 
-  async updateTitle(sessionId: string, title: string): Promise<ChatSession> {
-    const response = await api.put(`/sessions/${sessionId}`, {
-      title,
-    });
-
+  async deleteSession(sessionId: string | number): Promise<ChatSession> {
+    const response = await api.delete(`/sessions/${sessionId}`);
     return unwrapResponse<ChatSession>(response);
   },
 };

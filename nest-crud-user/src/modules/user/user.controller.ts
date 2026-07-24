@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,6 +10,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +20,7 @@ import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RoleGuard } from 'src/guards/role.guard';
+import { ChangePasswordDto } from './dtos/changePassword.dto';
 import { UpdateUserDto } from './dtos/UpdateUserRequest.dto';
 import { User } from './entity/user.entity';
 import {
@@ -59,10 +62,24 @@ export class UserController {
   @Throttle({ default: { ttl: 60000, limit: 30 } })
   @Get()
   @UseGuards(new RoleGuard(['admin']))
-  async findAll(): Promise<ResponseData<User>> {
-    const users = await this.userService.findAll();
+  async findAll(
+    @Query('search') search?: string,
+  ): Promise<ResponseData<User[]>> {
+    const users = await this.userService.findAll(search);
 
-    return new ResponseData<User>(users, HttpStatus.OK, HttpMessage.OK);
+    return new ResponseData<User[]>(users, HttpStatus.OK, HttpMessage.OK);
+  }
+
+  @Get('stats')
+  @UseGuards(new RoleGuard(['admin']))
+  async getStats(): Promise<ResponseData<{ activeUsers: number }>> {
+    const activeUsers = await this.userService.countActiveUsers();
+
+    return new ResponseData<{ activeUsers: number }>(
+      { activeUsers },
+      HttpStatus.OK,
+      HttpMessage.OK,
+    );
   }
 
   @UseGuards(new RoleGuard(['admin']))
@@ -149,6 +166,43 @@ export class UserController {
       { deletedId: id },
       HttpStatus.OK,
       HttpMessage.OK,
+    );
+  }
+
+  @Patch('me/password')
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() req: any,
+  ): Promise<ResponseData<null>> {
+    const result = await this.userService.changePassword(
+      req.user as User,
+      changePasswordDto,
+    );
+
+    if (result.type === 'NOT_FOUND') {
+      throw new NotFoundException(
+        new ResponseData<null>(
+          null,
+          HttpStatus.NOT_FOUND,
+          HttpMessage.NOT_FOUND,
+        ),
+      );
+    }
+
+    if (result.type === 'INVALID_CURRENT_PASSWORD') {
+      throw new BadRequestException(
+        new ResponseData<null>(
+          null,
+          HttpStatus.BAD_REQUEST,
+          'Mật khẩu hiện tại không đúng',
+        ),
+      );
+    }
+
+    return new ResponseData<null>(
+      null,
+      HttpStatus.OK,
+      'Đổi mật khẩu thành công',
     );
   }
 }

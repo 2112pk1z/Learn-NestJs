@@ -18,3 +18,21 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (typeof window !== "undefined" && error.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+
+      const isAdminPath = window.location.pathname.startsWith("/admin");
+      const loginPath = isAdminPath ? "/admin/login" : "/login";
+
+      if (window.location.pathname !== loginPath) {
+        window.location.href = loginPath;
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);

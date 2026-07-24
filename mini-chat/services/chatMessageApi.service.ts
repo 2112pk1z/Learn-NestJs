@@ -1,10 +1,10 @@
 import { api } from "@/lib/api";
 import { unwrapResponse } from "@/services/request.service";
-import type { ChatMessage, ChatRole } from "@/types/chat.type";
+import type { ChatMessage } from "@/types/chat.type";
 
 export const chatMessageApi = {
-  async getMessages(sessionId: string): Promise<ChatMessage[]> {
-    const response = await api.get(`/messages?sessionId=${sessionId}`);
+  async getMessages(sessionId: string | number): Promise<ChatMessage[]> {
+    const response = await api.get(`/messages?sessionId=${Number(sessionId)}`);
     const messages = unwrapResponse<ChatMessage[]>(response);
 
     return messages.sort(
@@ -13,18 +13,26 @@ export const chatMessageApi = {
     );
   },
 
-  async createMessage(params: {
-    sessionId: string;
-    role: ChatRole;
+  async createUserMessage(params: {
+    sessionId: number | string;
     content: string;
   }): Promise<ChatMessage> {
-    const response = await api.post("/messages", {
-      sessionId: params.sessionId,
-      role: params.role,
+    const response = await api.post("/messages/user", {
+      sessionId: Number(params.sessionId),
       content: params.content,
-      createdAt: new Date().toISOString(),
     });
 
     return unwrapResponse<ChatMessage>(response);
   },
 };
+
+export function buildMessageStreamUrl(params: {
+  sessionId: number | string;
+  userMessageId: number | string;
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  return `${baseUrl}/messages/stream?sessionId=${Number(
+    params.sessionId,
+  )}&userMessageId=${Number(params.userMessageId)}`;
+}

@@ -17,6 +17,18 @@ services:
       DB_PASSWORD: 123456
       DB_NAME: nest_crud_user
 
+      MINIO_PUBLIC_ENDPOINT: localhost
+      MINIO_PUBLIC_PORT: 9000
+      MINIO_PUBLIC_USE_SSL: false
+      MINIO_REGION: us-east-1
+
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      MINIO_BUCKET: legal-documents
+      MINIO_USE_SSL: false
+
       JWT_SECRET: K8vN2qX7mLp4Rz9JcT5wHy1BaUf6DsEe
       JWT_EXPIRES_IN_SECONDS: 3600
 

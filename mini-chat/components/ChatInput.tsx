@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { useChatMessageStore } from "@/store/useChatMessageStore";
 import {
   Image as ImageIcon,
@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
 
 export default function ChatInput() {
   const [text, setText] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const addMessage = useChatMessageStore((state) => state.addMessage);
 
   useEffect(() => {
@@ -25,6 +25,15 @@ export default function ChatInput() {
     if (!text.trim()) return;
     addMessage(text);
     setText("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
   };
 
   return (
@@ -32,38 +41,45 @@ export default function ChatInput() {
       onSubmit={handleSend}
       className="mx-auto w-full max-w-5xl px-4 pb-4 pt-2 sm:px-6 lg:px-8"
     >
-      <div className="flex min-h-14 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 shadow-lg shadow-slate-200/70">
+      <div className="flex min-h-14 items-end gap-2 rounded-3xl border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-200/70">
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           title="Đính kèm tệp"
-          className="hidden rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700 sm:inline-flex"
+          className="hidden mb-px rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700 sm:inline-flex"
         >
           <Paperclip className="size-4" />
         </Button>
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           title="Thêm ảnh"
-          className="hidden rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700 sm:inline-flex"
+          className="hidden mb-px rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700 sm:inline-flex"
         >
           <ImageIcon className="size-4" />
         </Button>
-        <Input
+        <textarea
           ref={inputRef}
+          rows={1}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
           placeholder="Hỏi tôi bất cứ điều gì..."
-          className="h-11 flex-1 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
+          className="max-h-40 min-h-9 flex-1 resize-none overflow-y-auto break-words bg-transparent px-2 pt-1.5 text-sm leading-5 outline-none placeholder:text-slate-400"
         />
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           title="Ghi âm"
-          className="rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700"
+          className="mb-px rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-700"
         >
           <Mic className="size-4" />
         </Button>
@@ -72,7 +88,7 @@ export default function ChatInput() {
           size="icon"
           title="Gửi tin nhắn"
           disabled={!text.trim()}
-          className="rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
+          className="mb-px rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
         >
           <SendHorizontal className="size-4" />
         </Button>

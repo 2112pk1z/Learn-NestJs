@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -18,9 +18,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any): Promise<User | null> {
+  async validate(payload: any): Promise<User> {
     const email = payload.email;
+
     const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị khóa');
+    }
+
     return user;
   }
 }

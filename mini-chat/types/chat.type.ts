@@ -1,14 +1,16 @@
 export type ChatRole = "user" | "assistant";
 
 export interface ChatSession {
-  id: string;
+  id: number | string;
   title: string;
   createdAt: string;
+  updatedAt?: string;
+  status?: boolean;
 }
 
 export interface ChatMessage {
-  id: string;
-  sessionId: string;
+  id: number | string;
+  sessionId?: number | string;
   role: ChatRole;
   content: string;
   createdAt: string;

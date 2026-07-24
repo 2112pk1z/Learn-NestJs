@@ -5,6 +5,7 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('documents')
@@ -16,10 +17,25 @@ export class Document {
   title: string;
 
   @Column()
-  filePath: string;
+  originalFileName: string;
+
+  @Column()
+  objectKey: string;
+
+  @Column()
+  mimeType: string;
+
+  @Column({ type: 'int' })
+  size: number;
+
+  @Column({ default: true })
+  status: boolean;
 
   @CreateDateColumn()
   uploadedAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => DocumentChunk, (chunk) => chunk.document)
   chunks: DocumentChunk[];
